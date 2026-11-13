@@ -6,7 +6,7 @@ pipeline {
     }
 
     stages {
-        stage('Pull SCM Git') {
+        stage('Pull SCM Git') { 
             steps {
                 git branch: 'main',
                     url: 'https://github.com/Rajathjavagal/DevOps_RJMB14.git'
