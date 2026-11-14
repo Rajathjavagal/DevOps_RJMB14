@@ -1,35 +1,42 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven3'
+    environment {
+        PATH = "/usr/bin:/bin:/opt/homebrew/bin"
     }
 
     stages {
-        stage('Pull SCM Git') { 
+
+        stage('compile') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/Rajathjavagal/DevOps_RJMB14.git'
+                sh 'mvn compile'
             }
         }
 
-        stage('Compile') {
-            steps {
-                sh 'mvn clean compile'
-            }
-        }
-
-        stage('Build') {
+        stage('build') {
             steps {
                 sh 'mvn clean install'
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression {
+                    env.BRANCH_NAME?.contains('release')
+                }
+            }
+
+            steps {
+                echo "Its a release branch and will start deploy the war to tomcat"
             }
         }
     }
 
     post {
         success {
-            echo 'Build success!'
+            echo 'Build success 1'
         }
+
         failure {
             echo 'Failure in the build'
         }
