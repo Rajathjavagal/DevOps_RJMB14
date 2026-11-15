@@ -9,8 +9,10 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-
+   <groupId>org.amazon</groupId>
     <artifactId>Amazon-Core</artifactId>
+   <packaging>war</packaging>
+   <version>1.0-SNAPSHOT</version>
 
     <name>Amazon-Core</name>
 
