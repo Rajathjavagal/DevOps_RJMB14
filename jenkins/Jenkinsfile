@@ -1,44 +1,95 @@
 pipeline {
     agent any
 
-    environment {
-        PATH = "/usr/bin:/bin:/opt/homebrew/bin"
+    tools {
+        maven 'Maven3'
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
 
-        stage('compile') {
+        stage('1. Checkout') {
             steps {
-                sh 'mvn compile'
+                checkout scm
+                echo 'Source code checkout successful'
             }
         }
 
-        stage('build') {
+        stage('2. Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn -B clean compile'
+                echo 'Java compilation successful'
             }
         }
 
-        stage('Deploy') {
-            when {
-                expression {
-                    env.BRANCH_NAME?.contains('release')
+        stage('3. Test') {
+            steps {
+                sh 'mvn -B test'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true,
+                          testResults: '*/target/surefire-reports/.xml'
                 }
             }
+        }
 
+        stage('4. Package') {
             steps {
-                echo "Its a release branch and will start deploy the war to tomcat"
+                sh 'mvn -B -DskipTests package'
+
+                archiveArtifacts(
+                    artifacts: 'Amazon-Core/target/*.war',
+                    fingerprint: true
+                )
+
+                echo 'WAR packaging successful'
+            }
+        }
+
+        stage('5. Deploy & Verify') {
+            steps {
+                sh '''
+                    set -eu
+
+                    WAR_FILE=$(find Amazon-Core/target \
+                        -maxdepth 1 -type f -name '*.war' \
+                        | head -n 1)
+
+                    test -n "$WAR_FILE"
+
+                    mkdir -p staging
+
+                    cp "$WAR_FILE" staging/
+
+                    test -s "staging/$(basename "$WAR_FILE")"
+
+                    echo "Deployment verified successfully"
+                '''
+
+                archiveArtifacts(
+                    artifacts: 'staging/*.war',
+                    fingerprint: true
+                )
             }
         }
     }
 
     post {
         success {
-            echo 'Build success 1'
+            echo 'SUCCESS: All five stages completed!'
         }
 
         failure {
-            echo 'Failure in the build'
+            echo 'FAILURE: Check Jenkins Console Output'
+        }
+
+        always {
+            echo "Pipeline execution completed"
         }
     }
 }
