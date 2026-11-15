@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('1. Checkout') {
+            steps {
+                checkout scm
+                echo 'Source code downloaded'
+            }
+        }
+
+        stage('2. Build - ERROR') {
+            steps {
+                catchError(buildResult: 'UNSTABLE',
+                           stageResult: 'FAILURE') {
+                    sh 'mvn clean compille'
+                }
+            }
+        }
+
+        stage('3. Test - ERROR') {
+            steps {
+                catchError(buildResult: 'UNSTABLE',
+                           stageResult: 'FAILURE') {
+                    sh 'mvn -Dtest=MissingTestClass test'
+                }
+            }
+        }
+
+        stage('4. Package - ERROR') {
+            steps {
+                catchError(buildResult: 'UNSTABLE',
+                           stageResult: 'FAILURE') {
+                    sh 'cp Amazon-Core/target/wrong.war ./'
+                }
+            }
+        }
+
+        stage('5. Deploy - ERROR') {
+            steps {
+                catchError(buildResult: 'UNSTABLE',
+                           stageResult: 'FAILURE') {
+                    sh 'cp Amazon-Core/target/wrong.war /invalid-folder/'
+                }
+            }
+        }
+    }
+}
